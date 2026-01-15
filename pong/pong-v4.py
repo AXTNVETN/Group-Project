@@ -38,6 +38,14 @@ paddle1_vel = 0
 paddle2_vel = 0
 l_score = 0
 r_score = 0
+game_over = False
+
+#Game rules
+# How long the game lasts
+TIME_LIMIT_SECONDS = 60 
+
+# game ends immediately if a player reaches 20 as score
+SCORE_LIMIT = 20
 
 ball_count = 1      # counts how many balls are on the screen
 ball_bounces = 0    # counts how many bounces took place game-wide
@@ -95,13 +103,16 @@ def ball_add(right):
 # define event handlers
 def init():
     global paddle1_pos, paddle2_pos, paddle1_vel, paddle2_vel, l_score, r_score, START_TIME, colour_inv
+    global game_over, start_time
     global score1, score2  # these are ints
     paddle1_pos = [HALF_PAD_WIDTH - 1,HEIGHT//2]
     paddle2_pos = [WIDTH +1 - HALF_PAD_WIDTH,HEIGHT//2]
     l_score = 0
     r_score = 0
     colour_inv = False # colour inversion
+    game_over = False
 
+    start_time = pygame.time.get_ticks()  # milliseconds
 
     START_TIME = pygame.time.get_ticks()
     
@@ -115,12 +126,12 @@ def init():
 def draw(canvas):
     global paddle1_pos, paddle2_pos, ball_pos, ball_vel, ball_count, ball_bounces, ball_bounces_l, ball_bounces_r
     global l_score, r_score, boost_time_l, boost_time_r, last_boost_l, last_boost_r, colour_inv
-    
+    global game_over
+
     elapsed_time = pygame.time.get_ticks()
 
     dh =  (elapsed_time - START_TIME) // 1000
         
-
     if (dh // 5) % 2 == 0:
         colour_inv = False
         canvas.fill(BLACK)
@@ -137,7 +148,7 @@ def draw(canvas):
         pygame.draw.line(canvas, BLACK, [WIDTH - PAD_WIDTH, 0],[WIDTH - PAD_WIDTH, HEIGHT], 2)
         pygame.draw.circle(canvas, BLACK, [WIDTH//2, HEIGHT//2], 70, 2)
     
-        # Trigger boost once at bounces 3, 6, 9, ...
+     # Trigger boost once at bounces 3, 6, 9, ...
     if (ball_bounces_l % 3 == 0) and (ball_bounces_l != 0) and (boost_time_l != elapsed_time):
         boost_time_l = elapsed_time
         # last_boost_l = ball_bounces_l
@@ -268,11 +279,61 @@ def draw(canvas):
     myfont2 = pygame.font.SysFont("Comic Sans MS", WIDTH//20)
     label2 = myfont2.render("Score "+str(r_score), 1, score_colour)
     canvas.blit(label2, (WIDTH/1.8, HEIGHT/10))  
+
+
+        # Timer
+    elapsed_ms = pygame.time.get_ticks() - start_time
+    elapsed_s = elapsed_ms / 1000.0
+    time_left = max(0, TIME_LIMIT_SECONDS - int(elapsed_s))
+
+    myfont = pygame.font.SysFont("Comic Sans MS", 20)
+    time_label = myfont.render(f"Time left: {time_left}s", 1, (255,255,0))
+    canvas.blit(time_label, (WIDTH//2 - 60, 20))
+
+
+    # after score/ball updates in draw():
+    if elapsed_s >= TIME_LIMIT_SECONDS or l_score >= SCORE_LIMIT or r_score >= SCORE_LIMIT:
+        for i in range(len(ball_vel)):
+            if len(ball_vel[i]) == 2:
+                ball_vel[i][0] = 0
+                ball_vel[i][1] = 0
+        game_over = True
+
+            # Game Over and Score final update
+    if game_over:
+                overlay = pygame.Surface((WIDTH, HEIGHT))
+                overlay.set_alpha(200)
+                overlay.fill((10,10,10))
+                canvas.blit(overlay, (0,0))
+
+                go_font = pygame.font.SysFont("Arial", 36, bold=True)
+                small_font = pygame.font.SysFont("Arial", 20)
+                go_label = go_font.render("GAME OVER", 1, (255, 0, 0))
+                score_label = small_font.render(f"Final Score - Player: {l_score}   Opponent: {r_score}", 1, (255,255,0))
+                instr_label = small_font.render("Press R to play again or Q to quit", 1, (200,200,200))
+
+                canvas.blit(go_label, (WIDTH//2 - go_label.get_width()//2, HEIGHT//2 - 60))
+                canvas.blit(score_label, (WIDTH//2 - score_label.get_width()//2, HEIGHT//2))
+                canvas.blit(instr_label, (WIDTH//2 - instr_label.get_width()//2, HEIGHT//2 + 40))
+                
+
+                return
     
     
 #keydown handler
 def keydown(event):
-    global paddle1_vel, paddle2_vel
+    global paddle1_vel, paddle2_vel, game_over, start_time
+
+    if game_over:
+        # when game over: R to restart, Q to quit
+        if event.key == K_r:
+            init()
+            return
+        elif event.key == K_q:
+            pygame.quit()
+            sys.exit()
+        # ignore other keys while in game over state
+        return
     
     if event.key == K_UP:
         paddle2_vel = -10
