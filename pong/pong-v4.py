@@ -45,14 +45,11 @@ ball_bounces_l = 0  # counts the bounces from theleft paddle
 ball_bounces_r = 0  # counts the bounces from the right paddle
 ball_spawnrate = 2  # sets how many bounces it takes to spawn an additional ball (default should be 2 I feel like)
 
-BOOST_DURATION_MS = 5000
-BOOST_EXTRA = 200
-
-
-boost_time_l = None
-boost_time_r = None
-
-last_boost_l = 0    # the last boost 
+BOOST_DURATION_MS = 5000 # amount of time the length boost is active for
+BOOST_EXTRA = 200        # the boost length
+boost_time_l = None      # time in which
+boost_time_r = None 
+last_boost_l = 0         # the last boost's activation bounce count
 last_boost_r = 0
 
 
@@ -125,6 +122,7 @@ def draw(canvas):
         
 
     if (dh // 5) % 2 == 0:
+        colour_inv = False
         canvas.fill(BLACK)
         pygame.draw.line(canvas, WHITE, [WIDTH // 2, 0],[WIDTH // 2, HEIGHT], 1)
         pygame.draw.line(canvas, WHITE, [PAD_WIDTH, 0],[PAD_WIDTH, HEIGHT], 1)
@@ -140,13 +138,13 @@ def draw(canvas):
         pygame.draw.circle(canvas, BLACK, [WIDTH//2, HEIGHT//2], 70, 2)
     
         # Trigger boost once at bounces 3, 6, 9, ...
-    if (ball_bounces_l % 3 == 0) and (ball_bounces_l != 0) and (ball_bounces_l != last_boost_l):
+    if (ball_bounces_l % 3 == 0) and (ball_bounces_l != 0) and (boost_time_l != elapsed_time):
         boost_time_l = elapsed_time
-        last_boost_l = ball_bounces_l
+        # last_boost_l = ball_bounces_l
 
-    if (ball_bounces_r % 3 == 0) and (ball_bounces_r != 0) and (ball_bounces_r != last_boost_r):
+    if (ball_bounces_r % 3 == 0) and (ball_bounces_r != 0) and (last_boost_r != ball_bounces_r):
         boost_time_r = elapsed_time
-        last_boost_r = ball_bounces_r
+        # last_boost_r = ball_bounces_r
 
     # Is boost active?
     l_boost_active = (boost_time_l is not None) and (elapsed_time - boost_time_l) < BOOST_DURATION_MS
@@ -191,12 +189,15 @@ def draw(canvas):
         #draw paddles and ball
         if not colour_inv:
             pygame.draw.circle(canvas, RED, ball_pos[i], 20, 0)
+            pygame.draw.polygon(canvas, GREEN, [[paddle1_pos[0] - HALF_PAD_WIDTH, paddle1_pos[1] - l_New_HALF_PAD_HEIGHT], [paddle1_pos[0] - HALF_PAD_WIDTH, paddle1_pos[1] + l_New_HALF_PAD_HEIGHT], [paddle1_pos[0] + HALF_PAD_WIDTH, paddle1_pos[1] + l_New_HALF_PAD_HEIGHT], [paddle1_pos[0] + HALF_PAD_WIDTH, paddle1_pos[1] - l_New_HALF_PAD_HEIGHT]], 0)
+            pygame.draw.polygon(canvas, GREEN, [[paddle2_pos[0] - HALF_PAD_WIDTH, paddle2_pos[1] - r_New_HALF_PAD_HEIGHT], [paddle2_pos[0] - HALF_PAD_WIDTH, paddle2_pos[1] + r_New_HALF_PAD_HEIGHT], [paddle2_pos[0] + HALF_PAD_WIDTH, paddle2_pos[1] + r_New_HALF_PAD_HEIGHT], [paddle2_pos[0] + HALF_PAD_WIDTH, paddle2_pos[1] - r_New_HALF_PAD_HEIGHT]], 0)
+
         else:
             pygame.draw.circle(canvas, (245,212,66), ball_pos[i], 20, 0)
+            pygame.draw.polygon(canvas, (13, 43, 2), [[paddle1_pos[0] - HALF_PAD_WIDTH, paddle1_pos[1] - l_New_HALF_PAD_HEIGHT], [paddle1_pos[0] - HALF_PAD_WIDTH, paddle1_pos[1] + l_New_HALF_PAD_HEIGHT], [paddle1_pos[0] + HALF_PAD_WIDTH, paddle1_pos[1] + l_New_HALF_PAD_HEIGHT], [paddle1_pos[0] + HALF_PAD_WIDTH, paddle1_pos[1] - l_New_HALF_PAD_HEIGHT]], 0)
+            pygame.draw.polygon(canvas, (13, 43, 2), [[paddle2_pos[0] - HALF_PAD_WIDTH, paddle2_pos[1] - r_New_HALF_PAD_HEIGHT], [paddle2_pos[0] - HALF_PAD_WIDTH, paddle2_pos[1] + r_New_HALF_PAD_HEIGHT], [paddle2_pos[0] + HALF_PAD_WIDTH, paddle2_pos[1] + r_New_HALF_PAD_HEIGHT], [paddle2_pos[0] + HALF_PAD_WIDTH, paddle2_pos[1] - r_New_HALF_PAD_HEIGHT]], 0)
 
-        pygame.draw.polygon(canvas, GREEN, [[paddle1_pos[0] - HALF_PAD_WIDTH, paddle1_pos[1] - l_New_HALF_PAD_HEIGHT], [paddle1_pos[0] - HALF_PAD_WIDTH, paddle1_pos[1] + l_New_HALF_PAD_HEIGHT], [paddle1_pos[0] + HALF_PAD_WIDTH, paddle1_pos[1] + l_New_HALF_PAD_HEIGHT], [paddle1_pos[0] + HALF_PAD_WIDTH, paddle1_pos[1] - l_New_HALF_PAD_HEIGHT]], 0)
-        pygame.draw.polygon(canvas, GREEN, [[paddle2_pos[0] - HALF_PAD_WIDTH, paddle2_pos[1] - r_New_HALF_PAD_HEIGHT], [paddle2_pos[0] - HALF_PAD_WIDTH, paddle2_pos[1] + r_New_HALF_PAD_HEIGHT], [paddle2_pos[0] + HALF_PAD_WIDTH, paddle2_pos[1] + r_New_HALF_PAD_HEIGHT], [paddle2_pos[0] + HALF_PAD_WIDTH, paddle2_pos[1] - r_New_HALF_PAD_HEIGHT]], 0)
-
+        
         #ball collision check on top and bottom walls
         if int(ball_pos[i][1]) <= BALL_RADIUS:
             ball_vel[i][1] = - ball_vel[i][1]
@@ -308,6 +309,6 @@ while True:
         elif event.type == QUIT:
             pygame.quit()
             sys.exit()
-    print(fps)     
+
     pygame.display.update()
     fps.tick(60)
